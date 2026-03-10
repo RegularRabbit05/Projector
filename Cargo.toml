@@ -6,3 +6,6 @@ edition = "2024"
 [dependencies]
 raylib = { version = "5.0", features = [ "opengl_21"] }
 nokhwa = { version = "0.10.10", features = [ "input-native" ] }
+winapi = { version = "0.3", features = [ "winuser" ] }
+cpal = { version = "0.17.3", features = ["audio_thread_priority"] }
+ringbuf = { version = "0.4.8" }
