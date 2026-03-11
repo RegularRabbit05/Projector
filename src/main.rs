@@ -39,6 +39,10 @@ fn screen(selected_camera_id: i32, mut rl: RaylibHandle, thread: RaylibThread) {
     let mut failed_frames = 0 as u32;
     
     while !rl.window_should_close() {
+        if rl.is_gesture_detected(Gesture::GESTURE_DOUBLETAP) {
+            rl.toggle_fullscreen();
+        }
+
         let frame = match cam.frame() {
             Ok(f) => f,
             Err(e) => {
@@ -117,8 +121,8 @@ fn app() {
 
         let sw = rl.get_screen_width();
         let max_num = cameras.len();
-        let input_devices = host.input_devices();
-        let max_mic = input_devices.iter().len() + 1;
+        let input_devices = host.input_devices().unwrap().into_iter();
+        let max_mic = host.input_devices().unwrap().into_iter().count();
         if let Some(ch) = rl.get_char_pressed() {
             let mut cc = ch as i32 - '0' as i32;
             if cc > 0 && cc <= 9 && cc <= max_num as i32 {
@@ -139,21 +143,40 @@ fn app() {
         d.clear_background(Color::BLACK);
         let txt = "Press Enter to confirm";
         d.draw_text(txt, sw / 2 - d.measure_text(txt, 50)/2, 0, 50, Color::RED);
+        
         for i in 0..=cameras.len()-1 {
             let mut color = Color::WHITE;
+
             if i as i32 == selected_camera_id - 1 {
                 color = Color::GREEN;
             }
-            d.draw_text(format!("{}: {}", i + 1, cameras.get(i).unwrap().human_name().as_str()).as_str(), 20, (50 + 50 * i).try_into().unwrap(), 50, color);
+
+            d.draw_text(
+                format!("{}: {}", i + 1, cameras.get(i).unwrap().human_name().as_str()).as_str(), 
+                20, 
+                (50 + 50 * i) as i32,
+                50,
+                color
+            );
         }
-        let mut i = 0;
-        for device in input_devices.unwrap() {
+
+        for (i, device) in input_devices.enumerate() {
             let mut color = Color::WHITE;
+            
             if i as i32 == selected_mic_id - 1 {
                 color = Color::GREEN;
             }
-            d.draw_text(format!("{}: {}", (i + ('a' as u8)) as char, device.description().unwrap().driver().unwrap()).as_str(), sw / 2, (50 + 50 * i).try_into().unwrap(), 50, color);
-            i = i+1;
+
+            let y_pos = 50 + (i as i32 * 50);
+            let label = (i as u8 + b'a') as char;
+
+            d.draw_text(
+                &format!("{}: {} ({})", label, device.description().unwrap().driver().unwrap(), device.description().unwrap().name()),
+                sw / 2, 
+                y_pos, 
+                50,
+                color
+            );
         }
     }
 
@@ -162,10 +185,9 @@ fn app() {
     }
 
     let mic_input_devices = host.input_devices();
-    let max_mic = mic_input_devices.iter().len() + 1;
-
+    let max_mic = host.input_devices().unwrap().into_iter().count();
+    
     if selected_mic_id > 0 && selected_mic_id <= max_mic as i32 {
-        rl.trace_log(TraceLogLevel::LOG_WARNING, "ENTRA?");
         let mut input = host.default_input_device().expect("no output device");
         let mut i = 0;
         for device in mic_input_devices.unwrap() {
