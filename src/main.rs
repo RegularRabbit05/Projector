@@ -38,9 +38,13 @@ fn screen(selected_camera_id: i32, mut rl: RaylibHandle, thread: RaylibThread) {
     texture.set_texture_filter(&thread, TextureFilter::TEXTURE_FILTER_BILINEAR);
     let mut failed_frames = 0 as u32;
     
+    let mut cooldown = 0;
     while !rl.window_should_close() {
-        if rl.is_gesture_detected(Gesture::GESTURE_DOUBLETAP) {
-            rl.toggle_fullscreen();
+        if cooldown <= 0 && rl.is_mouse_button_pressed(MouseButton::MOUSE_BUTTON_RIGHT) {
+            rl.toggle_borderless_windowed();
+            cooldown = 1000;
+        } else if cooldown > 0 {
+            cooldown = cooldown - (rl.get_frame_time() * 1000.0) as i32;
         }
 
         let frame = match cam.frame() {
@@ -143,7 +147,7 @@ fn app() {
         d.clear_background(Color::BLACK);
         let txt = "Press Enter to confirm";
         d.draw_text(txt, sw / 2 - d.measure_text(txt, 50)/2, 0, 50, Color::RED);
-        
+
         for i in 0..=cameras.len()-1 {
             let mut color = Color::WHITE;
 
