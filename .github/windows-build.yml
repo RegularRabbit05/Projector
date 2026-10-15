@@ -1,0 +1,14 @@
+name: Windows
+
+on: [workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: cargo build --release
+      - uses: actions/upload-artifact@v7
+        with:
+          name: Projector
+          path: target/release/Projector.exe
